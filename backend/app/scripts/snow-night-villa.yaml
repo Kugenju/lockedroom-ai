@@ -1,0 +1,161 @@
+id: snow-night-villa
+title: 雪夜·山庄
+brief: |
+  冬至夜，暴风雪封住了山。山庄主人沈万楼被发现死于自己的书房——
+  房门从内反锁，窗户插着插销，是一间完美的密室。
+  在场的五个人都有嫌疑，而雪停之前，没有人能离开。
+
+facts:
+  - id: p_setup
+    visibility: public
+    core: false
+    content: 死者沈万楼，62岁，山庄主人，死于书房，房门从内反锁，门窗完好。
+    keywords: [沈万楼, 书房, 密室]
+  - id: p_snow
+    visibility: public
+    core: false
+    content: 暴风雪自下午起封山，山庄与外界隔绝，凶手必在当晚留宿的五人之中。
+    keywords: [暴风雪, 封山]
+  - id: t_method
+    visibility: private
+    core: true
+    content: 死者死于过量胰岛素注射，腹部针孔被领带遮住，伪装成心脏病发。
+    keywords: [胰岛素, 注射, 针孔, 心脏病]
+  - id: t_time
+    visibility: private
+    core: true
+    content: 实际死亡时间为23:00至23:30之间，早于众人认知的午夜。
+    keywords: [十一点, 23点, 死亡时间]
+  - id: t_noise
+    visibility: private
+    core: false
+    content: 林晚秋23:15经过书房门外，听到里面有激烈的争吵声，其中一方的声音不是死者。
+    keywords: [争吵, 十一点十五, "23:15"]
+  - id: t_will
+    visibility: private
+    core: false
+    content: 死者当天让律师送来新遗嘱草稿，准备剥夺方鹤鸣的继承权。
+    keywords: [遗嘱, 草稿, 律师]
+  - id: t_inheritance
+    visibility: private
+    core: true
+    content: 方鹤鸣欠下八十万赌债，并伪造死者签名向地下钱庄借款，死者已掌握字据。
+    keywords: [赌债, 伪造签名, 八十万]
+  - id: t_debt
+    visibility: private
+    core: false
+    content: 顾承业挪用公司公款三百万元，死者握有证据，限其三日内归还。
+    keywords: [挪用, 公款, 三百万]
+  - id: t_affair
+    visibility: private
+    core: false
+    content: 苏曼卿是死者的私生女，上周上门相认被死者拒绝，并遭言语羞辱。
+    keywords: [私生女, 相认]
+  - id: t_drug
+    visibility: private
+    core: true
+    content: 周慕辰长期倒卖处方药牟利，死者发现后勒令其交出全部所得并辞职，否则报警。
+    keywords: [倒卖, 处方药, 辞职]
+  - id: t_medicine
+    visibility: private
+    core: false
+    content: 周慕辰医药箱中的胰岛素笔少了一支，且笔身有新刮痕。
+    keywords: [胰岛素笔, 少了一支, 刮痕]
+  - id: t_window
+    visibility: private
+    core: true
+    content: 书房窗户插销上有细微划痕，窗台内侧有融雪水渍——窗户曾被从外打开后重新锁上，凶手经阳台离开。
+    keywords: [插销, 划痕, 融雪, 阳台]
+
+characters:
+  - id: shen_wanlou
+    name: 沈万楼
+    role: 死者（山庄主人）
+    is_victim: true
+    is_killer: false
+    public_profile: 死者。经营药材生意发家，性情刚愎，掌控欲极强。
+    personality: ""
+    speaking_style: ""
+    known_fact_ids: []
+  - id: lin_wanqiu
+    name: 林晚秋
+    role: 管家
+    is_victim: false
+    is_killer: false
+    public_profile: 沈家管家，服务二十年，掌管山庄大小事务。
+    personality: 谨慎克制，忠于沈家，说话留三分。
+    speaking_style: 简短恭敬，多用"是""老爷"，被逼问时会沉默片刻再答。
+    known_fact_ids: [t_noise, t_will]
+  - id: gu_chengye
+    name: 顾承业
+    role: 生意合伙人
+    is_victim: false
+    is_killer: false
+    public_profile: 死者生意合伙人，当晚与死者谈过公司账目。
+    personality: 精明圆滑，习惯把话题引向生意场。
+    speaking_style: 客套话多，回避直接回答，喜欢用反问。
+    known_fact_ids: [t_debt]
+  - id: su_manqing
+    name: 苏曼卿
+    role: 钢琴教师
+    is_victim: false
+    is_killer: false
+    public_profile: 受雇于山庄教小少爷钢琴的女教师，案发前一周才到。
+    personality: 敏感内敛，自尊心强，情绪激动时语速变快。
+    speaking_style: 文艺含蓄，偶有试探，对身份话题极为回避。
+    known_fact_ids: [t_affair]
+  - id: fang_heming
+    name: 方鹤鸣
+    role: 远房侄子
+    is_victim: false
+    is_killer: false
+    public_profile: 死者的远房侄子，最近常住山庄，出手阔绰。
+    personality: 轻浮好赌，虚张声势，越心虚越大声。
+    speaking_style: 口头禅"开什么玩笑"，回答常自相矛盾。
+    known_fact_ids: [t_inheritance]
+  - id: zhou_muchen
+    name: 周慕辰
+    role: 家庭医生
+    is_victim: false
+    is_killer: true
+    public_profile: 山庄家庭医生，负责死者的日常健康，案发当晚为死者做过例行检查。
+    personality: 温和专业，善于安抚他人，压力下依旧冷静。
+    speaking_style: 用词精确，习惯用医学解释一切，滴水不漏。
+    known_fact_ids: [t_method, t_time, t_drug, t_medicine, t_window]
+
+clues:
+  - id: c_report
+    title: 初步检验结果
+    stage: 0
+    location: 书房（死者身上）
+    description: 死者体表无明显外伤，领带遮掩处有细微针孔，死状近似急性心衰。
+    reveals_fact_ids: [t_method, t_time]
+  - id: c_insulin
+    title: 空掉的胰岛素笔
+    stage: 0
+    location: 医疗室
+    description: 周慕辰的医药箱底层，一支胰岛素笔已经空了，笔身有一道新刮痕。
+    reveals_fact_ids: [t_medicine]
+  - id: c_window
+    title: 窗台的融雪水渍
+    stage: 0
+    location: 书房窗台
+    description: 插销有细微划痕，窗台内侧有一小滩融雪的水渍。
+    reveals_fact_ids: [t_window]
+  - id: c_will
+    title: 遗嘱草稿与字据
+    stage: 0
+    location: 书房抽屉
+    description: 一份尚未签署的新遗嘱草稿，旁边放着方鹤鸣伪造签名的借款字据。
+    reveals_fact_ids: [t_will, t_inheritance]
+  - id: c_ledger
+    title: 异常的采购单
+    stage: 1
+    location: 医疗室（夹层）
+    description: 夹在医学期刊里的药品采购单复印件，进货量远超处方记录。
+    reveals_fact_ids: [t_drug]
+
+evaluation:
+  killer_id: zhou_muchen
+  motive_fact_id: t_drug
+  required_fact_ids: [t_method, t_time, t_drug, t_window]
