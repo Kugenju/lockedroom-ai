@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "scriptmurder"
+name = "lockedroom-ai"
 version = "0.1.0"
 description = "Multi-agent LLM murder mystery platform with information isolation (InfoGuard) and replay evaluation (ReplayEval)"
 readme = "README.md"

@@ -1,4 +1,4 @@
-"""终端试玩客户端。
+"""终端试玩客户端（LockedRoom AI）。
 
 先启动服务（另一个终端）：
     .venv\\Scripts\\python.exe -m uvicorn app.api.app:create_app --factory --app-dir backend --port 18000
@@ -13,7 +13,7 @@ import httpx
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="ScriptMurder 终端试玩")
+    ap = argparse.ArgumentParser(description="LockedRoom AI 终端试玩")
     ap.add_argument("--base", default="http://127.0.0.1:18000", help="后端地址")
     ap.add_argument("--script", default="snow-night-villa", help="剧本 id")
     ap.add_argument("--no-self-intro", action="store_true", help="跳过角色自我介绍")

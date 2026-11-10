@@ -1,4 +1,6 @@
-# ScriptMurder
+# LockedRoom AI
+
+> 仓库名 `lockedroom-ai` ——"密室"双关：剧本杀的经典密室诡计，与每个 AI 角色被锁进自己信息密室的信息隔离设计。
 
 多智能体 LLM 剧本杀推理平台 —— 以**信息隔离与防剧透引擎（InfoGuard）**和**复盘评估系统（ReplayEval）**为核心差异化。
 

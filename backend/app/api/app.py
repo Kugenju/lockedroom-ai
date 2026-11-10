@@ -15,7 +15,7 @@ def create_app(llm: BaseChatModel | None = None) -> FastAPI:
 
         llm = create_chat_model()
 
-    app = FastAPI(title="ScriptMurder", version="0.1.0")
+    app = FastAPI(title="LockedRoom AI", version="0.1.0")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],  # tightened once the frontend origin is known
