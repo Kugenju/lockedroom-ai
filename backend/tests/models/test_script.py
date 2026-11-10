@@ -162,3 +162,18 @@ def test_demo_script_loads():
     assert sum(c.is_victim for c in script.characters) == 1
     killer = next(c for c in script.characters if c.is_killer)
     assert killer.id == script.evaluation.killer_id
+
+
+def test_midnight_meeting_script_loads():
+    from app.core.scripts.loader import list_scripts, load_script
+
+    assert "midnight-meeting" in list_scripts()
+    script = load_script("midnight-meeting")
+    assert script.title == "午夜会议室"
+    assert sum(c.is_killer for c in script.characters) == 1
+    assert sum(c.is_victim for c in script.characters) == 1
+    assert len(script.clues) >= 5
+    assert len(script.evaluation.required_fact_ids) == 4
+    killer = next(c for c in script.characters if c.is_killer)
+    assert killer.id == script.evaluation.killer_id
+    assert script.evaluation.motive_fact_id in killer.known_fact_ids

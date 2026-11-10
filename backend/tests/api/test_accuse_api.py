@@ -97,3 +97,26 @@ def test_event_log_contains_accusation_and_reveal(client, game_id):
     reveal = next(e for e in events if e["type"] == "system")
     assert reveal["payload"]["kind"] == "reveal"
     assert REVEAL_TEXT in reveal["payload"]["content"]
+
+
+def test_motive_options_spoiler_free(client, game_id):
+    r = client.get(f"/api/games/{game_id}/motive-options")
+    assert r.status_code == 200
+    options = r.json()["options"]
+    # before searching, only the "unsure" fallback is offered — no spoilers
+    assert len(options) == 1
+    assert options[0]["fact_id"] is None
+
+    client.post(f"/api/games/{game_id}/search", json={"location": "书房"})
+    r = client.get(f"/api/games/{game_id}/motive-options")
+    fact_ids = {o["fact_id"] for o in r.json()["options"]}
+    # study drawer reveals t_will + t_inheritance
+    assert {"t_will", "t_inheritance"} <= fact_ids
+    assert "t_drug" not in fact_ids  # the true motive stays hidden
+
+
+def test_motive_option_statements_readable(client, game_id):
+    client.post(f"/api/games/{game_id}/search", json={"location": "书房"})
+    options = client.get(f"/api/games/{game_id}/motive-options").json()["options"]
+    statements = [o["statement"] for o in options]
+    assert any("遗嘱" in s for s in statements)

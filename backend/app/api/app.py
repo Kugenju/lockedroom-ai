@@ -31,4 +31,19 @@ def create_app(llm: BaseChatModel | None = None) -> FastAPI:
     from app.api.routes_game import router as game_router
 
     app.include_router(game_router)
+    _mount_frontend(app)
     return app
+
+
+def _mount_frontend(app: FastAPI) -> None:
+    """Serve the built React app (frontend/dist) at / when it exists.
+
+    Layout: <repo>/backend/app/api/app.py → parents[3] is the repo root.
+    """
+    from pathlib import Path
+
+    from fastapi.staticfiles import StaticFiles
+
+    dist = Path(__file__).resolve().parents[3] / "frontend" / "dist"
+    if dist.is_dir():
+        app.mount("/", StaticFiles(directory=dist, html=True), name="frontend")

@@ -20,8 +20,20 @@ def test_locations_listing(client, game_id):
     r = client.get(f"/api/games/{game_id}/locations")
     assert r.status_code == 200
     locations = r.json()["locations"]
-    assert "书房" in locations or any("书房" in loc for loc in locations)
-    assert "医疗室" in locations
+    assert all("location" in l and "total" in l and "unlocked" in l for l in locations)
+    names = [l["location"] for l in locations]
+    assert any("书房" in n for n in names)
+    assert "医疗室" in names
+    # initially nothing unlocked
+    assert all(l["unlocked"] == 0 and l["total"] >= 1 for l in locations)
+
+
+def test_location_counts_reflect_search(client, game_id):
+    client.post(f"/api/games/{game_id}/search", json={"location": "书房"})
+    locations = client.get(f"/api/games/{game_id}/locations").json()["locations"]
+    study = [l for l in locations if l["location"].startswith("书房")]
+    assert sum(l["unlocked"] for l in study) == 3
+    assert sum(l["total"] for l in study) == 3
 
 
 def test_search_unlocks_clues_by_prefix(client, game_id):

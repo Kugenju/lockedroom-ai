@@ -1,0 +1,14 @@
+services:
+  lockedroom:
+    build: .
+    ports:
+      - "18000:10000"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - lockedroom-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  lockedroom-data:

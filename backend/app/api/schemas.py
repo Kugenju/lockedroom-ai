@@ -106,3 +106,12 @@ class ChainResponse(BaseModel):
     key_insights: list[str]
     missed_clues: list[str]
     summary: str
+
+
+class MotiveOption(BaseModel):
+    fact_id: str | None  # None = "我不确定动机"
+    statement: str
+
+
+class MotiveOptionsResponse(BaseModel):
+    options: list[MotiveOption]

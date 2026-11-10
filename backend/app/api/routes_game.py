@@ -17,6 +17,8 @@ from app.api.schemas import (
     CreateGameRequest,
     EventLogResponse,
     GameInfo,
+    MotiveOption,
+    MotiveOptionsResponse,
     PhaseRequest,
     PhaseResponse,
     ReplayResponse,
@@ -172,9 +174,19 @@ def _clue_summary(clue) -> ClueSummary:
 
 @router.get("/games/{game_id}/locations")
 def list_locations(game_id: str, store: GameStore = Depends(get_store)) -> dict:
+    """Searchable locations with per-location clue counts (counts only, no spoilers)."""
     record = _get_record(store, game_id)
-    locations = sorted({c.location for c in record.session.script.clues})
-    return {"locations": locations}
+    session = record.session
+    unlocked = session.unlocked_clue_ids
+    by_loc: dict[str, dict] = {}
+    for clue in session.script.clues:
+        entry = by_loc.setdefault(
+            clue.location, {"location": clue.location, "total": 0, "unlocked": 0}
+        )
+        entry["total"] += 1
+        if clue.id in unlocked:
+            entry["unlocked"] += 1
+    return {"locations": sorted(by_loc.values(), key=lambda x: x["location"])}
 
 
 @router.post("/games/{game_id}/search")
@@ -204,6 +216,28 @@ def get_player_clues(game_id: str, store: GameStore = Depends(get_store)) -> Clu
     by_id = {c.id: c for c in session.script.clues}
     clues = [_clue_summary(by_id[cid]) for cid in sorted(session.unlocked_clue_ids) if cid in by_id]
     return ClueListResponse(clues=clues)
+
+
+@router.get("/games/{game_id}/motive-options")
+def get_motive_options(
+    game_id: str, store: GameStore = Depends(get_store)
+) -> MotiveOptionsResponse:
+    """Spoiler-free motive candidates: only facts the player has already revealed via clues."""
+    record = _get_record(store, game_id)
+    session = record.session
+    script = session.script
+    revealed = {
+        fid
+        for clue in script.clues
+        if clue.id in session.unlocked_clue_ids
+        for fid in clue.reveals_fact_ids
+    }
+    options = [MotiveOption(fact_id=None, statement="我不确定动机")]
+    options += [
+        MotiveOption(fact_id=fid, statement=script.get_fact(fid).content)
+        for fid in sorted(revealed)
+    ]
+    return MotiveOptionsResponse(options=options)
 
 
 @router.post("/games/{game_id}/accuse")

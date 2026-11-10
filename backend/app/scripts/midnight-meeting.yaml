@@ -1,0 +1,143 @@
+id: midnight-meeting
+title: 午夜会议室
+brief: |
+  周五深夜，科技公司"星桥"的顶楼会议室还亮着灯。
+  CEO 高志远被发现死在会议室的沙发上——房门从内侧反锁，
+  是一间指纹密码双重锁定的现代密室。
+  当晚加班的四个人，每个人都有不愿说出口的事。
+
+facts:
+  - id: p_setup
+    visibility: public
+    core: false
+    content: 死者高志远，48岁，星桥科技 CEO，死于顶楼会议室沙发上，房门从内侧反锁，室内无搏斗痕迹。
+    keywords: [高志远, 会议室, 密室]
+  - id: p_office
+    visibility: public
+    core: false
+    content: 深夜加班期间大楼门禁已锁，电梯监控当晚"例行维护"无画面，凶手必在加班的四人之中。
+    keywords: [门禁, 监控, 加班]
+  - id: t_method
+    visibility: private
+    core: true
+    content: 高志远有严重花生过敏，咖啡奶泡剂被人换成花生油，引发过敏性休克致死，死状被伪装成突发心脏病。
+    keywords: [花生油, 过敏, 奶泡剂, 心脏病]
+  - id: t_time
+    visibility: private
+    core: true
+    content: 实际死亡时间为21:40至22:00之间，早于四人记忆中"22:30散会时发现异常"的说法。
+    keywords: [九点四十, "21:40", 死亡时间]
+  - id: t_access
+    visibility: private
+    core: true
+    content: 门禁日志显示22:05会议室有一次开门记录，而那时四人都声称已离开该楼层。
+    keywords: [门禁, "22:05", 开门记录]
+  - id: t_source
+    visibility: private
+    core: true
+    content: 韩子昂长期将公司核心源码外发给竞争对手换钱，高志远发现后限其24小时内交出全部所得并辞职，否则移交司法。
+    keywords: [源码, 外发, 辞职]
+  - id: t_bottle
+    visibility: private
+    core: false
+    content: 茶水间奶泡剂瓶内有花生油残留，瓶身标签被人撕去一角。
+    keywords: [奶泡剂, 花生油, 标签]
+  - id: t_motive_zheng
+    visibility: private
+    core: false
+    content: 郑可欣挪用公司公款两百万元购买理财暴雷，高志远已掌握银行流水。
+    keywords: [挪用, 理财, 两百万]
+  - id: t_motive_meng
+    visibility: private
+    core: false
+    content: 孟晓萌被高志远以转正为把柄长期要挟，当晚曾私下摊牌，被高志远当众羞辱拒绝。
+    keywords: [转正, 要挟]
+  - id: t_motive_shen
+    visibility: private
+    core: false
+    content: 沈巍主导的并购对赌失败，高志远追究其两千万回购责任，声称"周一就走法律程序"。
+    keywords: [对赌, 回购]
+
+characters:
+  - id: gao_zy
+    name: 高志远
+    role: 死者（CEO）
+    is_victim: true
+    is_killer: false
+    public_profile: 死者。星桥科技创始人，以铁腕和抠细节著称，最近刚否决了一笔救命融资。
+    personality: ""
+    speaking_style: ""
+    known_fact_ids: []
+  - id: zheng_kexin
+    name: 郑可欣
+    role: 财务总监
+    is_victim: false
+    is_killer: false
+    public_profile: 公司财务总监，跟了高志远八年，掌管所有资金往来。
+    personality: 冷静缜密，滴水不漏，越是紧张越是说话慢。
+    speaking_style: 数字精确，习惯引用报表和流程，回答前会停顿几秒。
+    known_fact_ids: [t_motive_zheng]
+  - id: meng_xiaomeng
+    name: 孟晓萌
+    role: 董事长秘书
+    is_victim: false
+    is_killer: false
+    public_profile: 高志远的秘书，入职刚满一年，负责会议纪要和咖啡茶点。
+    personality: 敏感紧张，欲言又止，对转正话题极度回避。
+    speaking_style: 句子短，常吞吞吐吐，提到死者时会移开视线。
+    known_fact_ids: [t_motive_meng]
+  - id: shen_wei
+    name: 沈巍
+    role: 合作方代表
+    is_victim: false
+    is_killer: false
+    public_profile: 并购方"澜海资本"派驻星桥的代表，当晚列席复盘会。
+    personality: 圆滑傲慢，习惯把话题引向商业格局，避实就虚。
+    speaking_style: 满嘴"闭环""赛道""格局"，回答像发布会通稿。
+    known_fact_ids: [t_motive_shen]
+  - id: han_ziang
+    name: 韩子昂
+    role: CTO
+    is_victim: false
+    is_killer: true
+    public_profile: 公司首席技术官，技术极客，当晚负责演示系统直到散会。
+    personality: 冷静到冷酷，习惯用系统和流程解释一切，从不接话茬。
+    speaking_style: 用词精确，爱用架构比喻，回答像技术文档一样没有情绪。
+    known_fact_ids: [t_method, t_time, t_access, t_source, t_bottle]
+
+clues:
+  - id: c_report
+    title: 急救初步判断记录
+    stage: 0
+    location: 会议室
+    description: 体表无外伤，症状符合急性心衰，但指甲床与口唇有轻微发绀——更像严重过敏反应。
+    reveals_fact_ids: [t_method, t_time]
+  - id: c_access
+    title: 门禁日志
+    stage: 0
+    location: 前台门禁机
+    description: 21:58 四人陆续刷卡离开楼层，22:05 会议室门被打开一次，22:31 有人呼叫了急救。
+    reveals_fact_ids: [t_access]
+  - id: c_bottle
+    title: 被动过手脚的奶泡剂
+    stage: 0
+    location: 茶水间
+    description: 奶泡剂瓶内有淡黄色油状残留，标签一角被撕去，瓶口有新鲜擦拭痕迹。
+    reveals_fact_ids: [t_bottle]
+  - id: c_docs
+    title: 抽屉里的文件
+    stage: 0
+    location: 办公桌抽屉
+    description: 一份银行流水打印件（郑可欣经手）和一封澜海资本的回购催告函。
+    reveals_fact_ids: [t_motive_zheng, t_motive_shen]
+  - id: c_repo
+    title: 加密硬盘的外发日志
+    stage: 1
+    location: 工位·加密硬盘
+    description: 藏在机械键盘底座下的加密盘，里面有分批外发核心仓库的传输记录和收款地址。
+    reveals_fact_ids: [t_source]
+
+evaluation:
+  killer_id: han_ziang
+  motive_fact_id: t_source
+  required_fact_ids: [t_method, t_time, t_access, t_source]
