@@ -6,13 +6,14 @@ interface Props {
   characters: CharacterSummary[]
   idx: number
   streamText: string
+  speech: string
   ready: boolean
   onNext: () => void
   onSkip: () => void
 }
 
 /** Cinematic character entrance sequence, paced by player clicks. */
-export default function IntroOverlay({ characters, idx, streamText, ready, onNext, onSkip }: Props) {
+export default function IntroOverlay({ characters, idx, streamText, speech, ready, onNext, onSkip }: Props) {
   const c = characters[idx]
   const last = idx === characters.length - 1
   return (
@@ -23,7 +24,7 @@ export default function IntroOverlay({ characters, idx, streamText, ready, onNex
           <Avatar id={c.id} name={c.name} size={72} />
           <h2>{c.name}</h2>
           <small>{c.role} · {c.personality}</small>
-          <p className="intro-speech">{streamText || '……'}</p>
+          <p className="intro-speech">{streamText || speech || '……'}</p>
         </div>
         <div className="intro-dots">
           {characters.map((ch, i) => (

@@ -32,6 +32,7 @@ export default function GameView({ game, onExit, onReplay }: Props) {
   const [streamCharId, setStreamCharId] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [introIdx, setIntroIdx] = useState<number | null>(null)
+  const [introSpeech, setIntroSpeech] = useState('')
   const [reveal, setReveal] = useState<AccuseResult | null>(null)
   const [accuseOpen, setAccuseOpen] = useState(false)
   const [leftCollapsed, setLeftCollapsed] = useState(false)
@@ -55,7 +56,7 @@ export default function GameView({ game, onExit, onReplay }: Props) {
   }
 
   /** Stream a character's reply token-by-token, then commit it to that character's bucket. */
-  const streamCharacter = async (charId: string, text: string) => {
+  const streamCharacter = async (charId: string, text: string): Promise<string> => {
     setStreaming(true)
     setStreamCharId(charId)
     setStreamText('')
@@ -74,6 +75,7 @@ export default function GameView({ game, onExit, onReplay }: Props) {
         }
       }
       appendMsg(charId, { from: 'character', text: full, rewritten, fellBack })
+      return full
     } finally {
       setStreaming(false)
       setStreamText('')
@@ -95,7 +97,9 @@ export default function GameView({ game, onExit, onReplay }: Props) {
       for (let i = 0; i < characters.length; i++) {
         if (skipIntros.current) break
         setIntroIdx(i)
-        await streamCharacter(characters[i].id, INTRO_PROMPT)
+        setIntroSpeech('')
+        const spoken = await streamCharacter(characters[i].id, INTRO_PROMPT)
+        setIntroSpeech(spoken)
         if (skipIntros.current) break
         await waitForClick()
       }
@@ -216,6 +220,7 @@ export default function GameView({ game, onExit, onReplay }: Props) {
           characters={characters}
           idx={introIdx}
           streamText={streamText}
+          speech={introSpeech}
           ready={!streaming}
           onNext={nextIntro}
           onSkip={skipIntroSequence}
