@@ -12,6 +12,16 @@ type View =
 export default function App() {
   const [view, setView] = useState<View>({ name: 'lobby' })
 
+  if (view.name === 'game') {
+    return (
+      <GameView
+        game={view.game}
+        onExit={() => setView({ name: 'lobby' })}
+        onReplay={(gameId, title) => setView({ name: 'replay', gameId, title })}
+      />
+    )
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -21,16 +31,7 @@ export default function App() {
         <p className="tagline">多智能体剧本杀 · 每个角色都被锁进自己的信息密室</p>
       </header>
       {view.name === 'lobby' && (
-        <Lobby
-          onStart={(game) => setView({ name: 'game', game })}
-        />
-      )}
-      {view.name === 'game' && (
-        <GameView
-          game={view.game}
-          onExit={() => setView({ name: 'lobby' })}
-          onReplay={(gameId, title) => setView({ name: 'replay', gameId, title })}
-        />
+        <Lobby onStart={(game) => setView({ name: 'game', game })} />
       )}
       {view.name === 'replay' && (
         <ReplayView

@@ -56,6 +56,7 @@ class Script(BaseModel):
     id: str
     title: str
     brief: str = ""
+    mode: str = "investigation"  # gameplay mode: drives frontend panel/view registry
     facts: list[Fact]
     characters: list[ScriptCharacter]
     clues: list[ScriptClue]

@@ -23,6 +23,7 @@ class GameInfo(BaseModel):
     game_id: str
     script_id: str
     title: str
+    mode: str = "investigation"
     phase: str
     brief: str
     characters: list[CharacterSummary]
@@ -78,7 +79,7 @@ class ClueListResponse(BaseModel):
 
 class AccuseRequest(BaseModel):
     suspect_id: str
-    motive_fact_id: str
+    motive_fact_id: str | None = None  # None = "我不确定动机"
 
 
 class AccusationOutcome(BaseModel):

@@ -71,6 +71,7 @@ def create_game(req: CreateGameRequest, store: GameStore = Depends(get_store)) -
         game_id=session.session_id,
         script_id=session.script.id,
         title=session.script.title,
+        mode=session.script.mode,
         phase=session.phase.value,
         brief=session.script.brief,
         characters=[
@@ -88,6 +89,7 @@ def get_game(game_id: str, store: GameStore = Depends(get_store)) -> GameInfo:
         game_id=session.session_id,
         script_id=session.script.id,
         title=session.script.title,
+        mode=session.script.mode,
         phase=session.phase.value,
         brief=session.script.brief,
         characters=[
@@ -255,15 +257,19 @@ async def accuse(
         raise HTTPException(status_code=400, detail=f"unknown suspect {req.suspect_id!r}") from None
     if suspect.is_victim:
         raise HTTPException(status_code=400, detail="the victim cannot be the killer")
-    try:
-        script.get_fact(req.motive_fact_id)
-    except KeyError:
-        raise HTTPException(status_code=400, detail=f"unknown motive fact {req.motive_fact_id!r}") from None
+    if req.motive_fact_id is not None:
+        try:
+            script.get_fact(req.motive_fact_id)
+        except KeyError:
+            raise HTTPException(
+                status_code=400, detail=f"unknown motive fact {req.motive_fact_id!r}"
+            ) from None
 
     session.advance_phase(Phase.ACCUSATION)
     outcome = AccusationOutcome(
         killer_correct=req.suspect_id == script.evaluation.killer_id,
-        motive_correct=req.motive_fact_id == script.evaluation.motive_fact_id,
+        motive_correct=req.motive_fact_id is not None
+        and req.motive_fact_id == script.evaluation.motive_fact_id,
     )
     session.record_player_action(
         "accuse",

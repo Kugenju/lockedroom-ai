@@ -26,9 +26,13 @@ async def generate_reveal(
     suspect = script.get_character(suspect_id).name
     truth = script.get_character(ev.killer_id).name
     motive = script.get_fact(ev.motive_fact_id).content
+    if motive_fact_id is not None:
+        accused_motive = script.get_fact(motive_fact_id).content
+    else:
+        accused_motive = "（玩家未指认动机）"
     user = (
         f"案件完整事实：\n{facts_text}\n\n"
-        f"玩家指认：凶手={suspect}，动机={script.get_fact(motive_fact_id).content}\n"
+        f"玩家指认：凶手={suspect}，动机={accused_motive}\n"
         f"正确答案：凶手={truth}，动机={motive}"
     )
     resp = await llm.chat(

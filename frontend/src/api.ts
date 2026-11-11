@@ -11,6 +11,7 @@ export interface GameInfo {
   game_id: string
   script_id: string
   title: string
+  mode: string
   phase: string
   brief: string
   characters: CharacterSummary[]

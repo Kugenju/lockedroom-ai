@@ -38,6 +38,7 @@ def make_script(**overrides) -> Script:
 def test_valid_script_constructs():
     script = make_script()
     assert script.id == "s1"
+    assert script.mode == "investigation"  # default gameplay mode
     assert script.get_character("c1").name == "角色一"
     assert script.get_fact("t1").core is False
 

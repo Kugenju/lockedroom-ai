@@ -52,6 +52,17 @@ def test_half_correct_accusation(client, game_id):
     assert r.json()["outcome"] == {"killer_correct": True, "motive_correct": False}
 
 
+def test_accusation_with_unknown_motive_allowed(client, game_id):
+    # "我不确定动机" (motive_fact_id=None) is a legal choice and counts as wrong
+    r = client.post(
+        f"/api/games/{game_id}/accuse",
+        json={"suspect_id": "zhou_muchen", "motive_fact_id": None},
+    )
+    assert r.status_code == 200
+    assert r.json()["outcome"] == {"killer_correct": True, "motive_correct": False}
+    assert client.get(f"/api/games/{game_id}").json()["phase"] == "ended"
+
+
 def test_accuse_only_from_investigation(client):
     gid = client.post("/api/games", json={"script_id": "snow-night-villa"}).json()["game_id"]
     r = client.post(
