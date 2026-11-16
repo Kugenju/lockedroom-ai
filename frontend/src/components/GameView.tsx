@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, type AccuseResult, type ClueSummary, type GameInfo } from '../api'
+import { api, type AccuseResult, type ClueSummary, type GameInfo, type NoteItem } from '../api'
 import { getLayout } from '../game/layout'
 import { streamTalk } from '../sse'
 import AccuseDialog from './game/AccuseDialog'
@@ -26,6 +26,7 @@ export default function GameView({ game, onExit, onReplay }: Props) {
   const [phase, setPhase] = useState(game.phase)
   const [buckets, setBuckets] = useState<Buckets>({})
   const [clues, setClues] = useState<ClueSummary[]>([])
+  const [notes, setNotes] = useState<NoteItem[]>([])
   const [activeChar, setActiveChar] = useState(characters[0]?.id ?? '')
   const [input, setInput] = useState('')
   const [streamText, setStreamText] = useState('')
@@ -45,7 +46,11 @@ export default function GameView({ game, onExit, onReplay }: Props) {
 
   useEffect(() => {
     api.getClues(game.game_id).then((r) => setClues(r.clues)).catch(() => {})
+    api.getNotes(game.game_id).then((r) => setNotes(r.notes)).catch(() => {})
   }, [game.game_id])
+
+  const charName = (id: string | null) =>
+    characters.find((c) => c.id === id)?.name ?? id ?? '?'
 
   const appendMsg = (charId: string, msg: Msg) =>
     setBuckets((b) => ({ ...b, [charId]: [...(b[charId] ?? []), msg] }))
@@ -131,6 +136,7 @@ export default function GameView({ game, onExit, onReplay }: Props) {
     appendMsg(activeChar, { from: 'player', text })
     try {
       await streamCharacter(activeChar, text)
+      api.getNotes(game.game_id).then((r) => setNotes(r.notes)).catch(() => {})
     } catch (e) {
       setError(`对话失败：${(e as Error).message}`)
     }
@@ -170,6 +176,9 @@ export default function GameView({ game, onExit, onReplay }: Props) {
             gameId={game.game_id}
             clues={clues}
             onClues={setClues}
+            notes={notes}
+            onNotes={setNotes}
+            charName={charName}
             collapsed={leftCollapsed}
             onToggle={() => setLeftCollapsed((v) => !v)}
           />

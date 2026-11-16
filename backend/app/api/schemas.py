@@ -116,3 +116,20 @@ class MotiveOption(BaseModel):
 
 class MotiveOptionsResponse(BaseModel):
     options: list[MotiveOption]
+
+
+class NoteCreateRequest(BaseModel):
+    content: str = Field(min_length=1)
+
+
+class NoteItem(BaseModel):
+    note_id: str
+    source: str  # "auto" | "player"
+    content: str
+    char_id: str | None = None
+    importance: int | None = None
+    ts: str
+
+
+class NotesResponse(BaseModel):
+    notes: list[NoteItem]

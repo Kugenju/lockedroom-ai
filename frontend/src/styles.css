@@ -98,6 +98,21 @@ input, textarea {
 .case-brief .brief-toggle { display: flex; justify-content: space-between; align-items: center; width: 100%; background: none; border: none; padding: 0; }
 .case-brief h4 { margin: 0; }
 .case-brief p { margin: 8px 0 2px; line-height: 1.8; font-size: 13px; white-space: pre-wrap; }
+.casefile-tabs { display: flex; gap: 6px; }
+.casefile-tabs button { flex: 1; padding: 6px; font-size: 13px; }
+.casefile-tabs button.active { border-color: var(--accent); color: var(--accent); }
+.notespanel { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--bg2); }
+.notespanel h3 { margin: 0 0 6px; }
+.note-add { display: flex; gap: 6px; margin: 8px 0; }
+.note-add input { flex: 1; }
+.note-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.note { border-left: 3px solid var(--accent2); background: var(--bg); border-radius: 0 8px 8px 0; padding: 6px 10px; }
+.note.auto { border-left-color: var(--accent); }
+.note-head { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.note-source { color: var(--accent); }
+.note-importance { color: var(--dim); }
+.note-del { margin-left: auto; padding: 0 4px; }
+.note p { margin: 4px 0 2px; font-size: 13px; line-height: 1.6; }
 
 .clueboard { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--bg2); }
 .clueboard h3 { margin: 0 0 6px; }

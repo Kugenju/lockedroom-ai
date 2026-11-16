@@ -84,6 +84,47 @@ class GameSession:
     def record_system(self, kind: str, content: str) -> GameEvent:
         return self._emit(EventType.SYSTEM, {"kind": kind, "content": content})
 
+    def record_event(self, event_type: EventType, payload: dict) -> GameEvent:
+        """Generic event emission for engine subsystems (memory, etc.)."""
+        return self._emit(event_type, payload)
+
+    # --- reasoning notes ---
+
+    def record_note(
+        self, source: str, content: str, char_id: str | None = None, importance: int | None = None
+    ) -> GameEvent:
+        note_id = f"note-{len(self._events)}"
+        return self._emit(
+            EventType.NOTE,
+            {
+                "op": "add",
+                "note_id": note_id,
+                "source": source,  # "auto" | "player"
+                "content": content,
+                "char_id": char_id,
+                "importance": importance,
+            },
+        )
+
+    def delete_note(self, note_id: str) -> GameEvent:
+        return self._emit(EventType.NOTE, {"op": "del", "note_id": note_id})
+
+    def notes(self) -> list[dict]:
+        """Current notes, folded from the add/del event log."""
+        folded: dict[str, dict] = {}
+        order: list[str] = []
+        for e in self._events:
+            if e.type is not EventType.NOTE:
+                continue
+            p = e.payload
+            nid = p.get("note_id", "")
+            if p.get("op") == "add":
+                folded[nid] = {**p, "ts": e.ts}
+                order.append(nid)
+            elif p.get("op") == "del":
+                folded.pop(nid, None)
+        return [folded[nid] for nid in order if nid in folded]
+
     def record_leak(
         self,
         character_id: str,

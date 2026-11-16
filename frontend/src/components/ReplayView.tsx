@@ -142,8 +142,18 @@ function eventLine(e: GameEvent): { icon: string; text: string } | null {
     case 'player_action':
       if (p.action === 'accuse') return { icon: '🎯', text: `玩家指认：${p.detail?.suspect_id}` }
       return null
+    case 'note':
+      if (p.op === 'add') {
+        const icon = p.source === 'auto' ? '📌' : '✍️'
+        return { icon, text: `笔记：${String(p.content ?? '').slice(0, 50)}` }
+      }
+      return null
     case 'system':
-      return p.kind === 'reveal' ? { icon: '📖', text: '真相揭晓' } : null
+      if (p.kind === 'reveal') return { icon: '📖', text: '真相揭晓' }
+      if (p.kind === 'memory_consolidation') {
+        return { icon: '🧠', text: `记忆固化（${p.op}，backlog ${p.backlog}）` }
+      }
+      return null
     default:
       return null
   }

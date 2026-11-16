@@ -15,6 +15,7 @@ class EventType(str, Enum):
     PLAYER_ACTION = "player_action"  # clue search, accusation, note, ...
     CLUE_UNLOCKED = "clue_unlocked"
     LEAK_DETECTED = "leak_detected"  # InfoGuard Layer-2 output
+    NOTE = "note"  # player/auto reasoning notes (add/del ops folded)
     SYSTEM = "system"
 
 

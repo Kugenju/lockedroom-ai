@@ -37,6 +37,15 @@ export interface MotiveOption {
   statement: string
 }
 
+export interface NoteItem {
+  note_id: string
+  source: string // "auto" | "player"
+  content: string
+  char_id: string | null
+  importance: number | null
+  ts: string
+}
+
 export interface AccuseResult {
   outcome: { killer_correct: boolean; motive_correct: boolean }
   reveal: string
@@ -135,6 +144,14 @@ export const api = {
     }),
   getMotiveOptions: (gameId: string) =>
     req<{ options: MotiveOption[] }>(`/games/${gameId}/motive-options`),
+  getNotes: (gameId: string) => req<{ notes: NoteItem[] }>(`/games/${gameId}/notes`),
+  addNote: (gameId: string, content: string) =>
+    req<NoteItem>(`/games/${gameId}/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+  deleteNote: (gameId: string, noteId: string) =>
+    req<{ ok: boolean }>(`/games/${gameId}/notes/${noteId}`, { method: 'DELETE' }),
   accuse: (gameId: string, suspectId: string, motiveFactId: string | null) =>
     req<AccuseResult>(`/games/${gameId}/accuse`, {
       method: 'POST',

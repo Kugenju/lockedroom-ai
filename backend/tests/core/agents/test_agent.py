@@ -47,7 +47,7 @@ async def test_normal_reply_is_recorded_and_kept_in_memory(session):
 
     # follow-up sees the dialogue history
     await agent.respond("有人能证明吗？")
-    assert len(agent.memory) >= 4
+    assert len(agent.memory.build_context()) >= 4
 
 
 async def test_hard_leak_triggers_single_rewrite(session):
@@ -82,5 +82,5 @@ async def test_no_memory_mutation_when_reply_is_rewritten(session):
     agent = _make_agent("lin_wanqiu", session)
     await agent.respond("怎么死的？")
     # the leaked draft must never enter the visible dialogue memory
-    remembered = "\n".join(m.content for m in agent.memory)
+    remembered = "\n".join(m.content for m in agent.memory.build_context())
     assert "死于过量胰岛素注射" not in remembered

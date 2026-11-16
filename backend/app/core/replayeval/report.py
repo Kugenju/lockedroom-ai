@@ -138,6 +138,12 @@ def _event_line(script: Script, e: GameEvent) -> str | None:
     if e.type is EventType.PLAYER_ACTION and p.get("action") == "accuse":
         d = p.get("detail", {})
         return f"- 🎯 玩家指认：{_char_name(script, d.get('suspect_id', ''))}"
+    if e.type is EventType.NOTE and p.get("op") == "add":
+        icon = "📌" if p.get("source") == "auto" else "✍️"
+        content = str(p.get("content", ""))[:60]
+        return f"- {icon} 笔记：{content}"
+    if e.type is EventType.SYSTEM and p.get("kind") == "memory_consolidation":
+        return f"- 🧠 记忆固化（{p.get('op')}，backlog {p.get('backlog')}）"
     if e.type is EventType.SYSTEM and p.get("kind") == "reveal":
         return "- 📖 真相揭晓"
     return None

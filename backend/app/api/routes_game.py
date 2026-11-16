@@ -19,6 +19,9 @@ from app.api.schemas import (
     GameInfo,
     MotiveOption,
     MotiveOptionsResponse,
+    NoteCreateRequest,
+    NoteItem,
+    NotesResponse,
     PhaseRequest,
     PhaseResponse,
     ReplayResponse,
@@ -240,6 +243,44 @@ def get_motive_options(
         for fid in sorted(revealed)
     ]
     return MotiveOptionsResponse(options=options)
+
+
+# --- reasoning notes ---
+
+
+@router.get("/games/{game_id}/notes")
+def get_notes(game_id: str, store: GameStore = Depends(get_store)) -> NotesResponse:
+    record = _get_record(store, game_id)
+    return NotesResponse(notes=[NoteItem(**n) for n in record.session.notes()])
+
+
+@router.post("/games/{game_id}/notes")
+def add_note(
+    game_id: str, req: NoteCreateRequest, store: GameStore = Depends(get_store)
+) -> NoteItem:
+    record = _get_record(store, game_id)
+    event = record.session.record_note(source="player", content=req.content)
+    p = event.payload
+    return NoteItem(
+        note_id=p["note_id"],
+        source=p["source"],
+        content=p["content"],
+        char_id=p.get("char_id"),
+        importance=p.get("importance"),
+        ts=event.ts,
+    )
+
+
+@router.delete("/games/{game_id}/notes/{note_id}")
+def remove_note(
+    game_id: str, note_id: str, store: GameStore = Depends(get_store)
+) -> dict:
+    record = _get_record(store, game_id)
+    existing = {n["note_id"] for n in record.session.notes()}
+    if note_id not in existing:
+        raise HTTPException(status_code=404, detail=f"note {note_id} not found")
+    record.session.delete_note(note_id)
+    return {"ok": True}
 
 
 @router.post("/games/{game_id}/accuse")

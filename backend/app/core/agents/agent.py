@@ -12,7 +12,9 @@ Pipeline per player message:
 
 from dataclasses import dataclass, field
 
+from app.core.agents.memory import EPISODIC_IMPORTANCE, AgentMemory
 from app.core.agents.prompt_builder import build_system_prompt
+from app.core.engine.events import EventType
 from app.core.engine.session import GameSession
 from app.core.infoguard.context_guard import ContextGuard
 from app.core.infoguard.detector import LeakDetector, LeakFinding
@@ -42,6 +44,7 @@ class CharacterAgent:
         session: GameSession,
         detector: LeakDetector,
         judge: LeakJudge | None = None,
+        memory: "AgentMemory | None" = None,
     ):
         self.character = character
         self.script = script
@@ -51,8 +54,16 @@ class CharacterAgent:
         self.detector = detector
         self._judge = judge
         self._guard = ContextGuard(script, scope)
-        self.memory: list[ChatMessage] = []
+        self.memory = memory or AgentMemory(
+            scorer_llm=llm, summarizer_llm=llm, detector=detector,
+            on_event=self._record_memory_event,
+        )
         self._system_prompt = build_system_prompt(script, character, scope)
+
+    def _record_memory_event(self, **payload) -> None:
+        self.session.record_event(
+            EventType.SYSTEM, {"kind": "memory_consolidation", "character_id": self.character.id, **payload}
+        )
 
     def _emit_leaks(
         self,
@@ -95,9 +106,10 @@ class CharacterAgent:
 
         messages = [
             ChatMessage(role="system", content=self._system_prompt),
-            *[self._guarded_memory(m) for m in self.memory],
+            *[self._guarded_memory(m) for m in self.memory.build_context()],
             ChatMessage(role="user", content=guarded.text),
         ]
+        self.memory.add_turn("user", player_message)
         draft = await self.llm.chat(messages)
         leaks = self.detector.check(draft.content)
         verdicts: dict[str, AdjudicatedLeak] = {}
@@ -150,6 +162,17 @@ class CharacterAgent:
             **({"fell_back": True} if fell_back else {}),
         )
         # memory only ever contains approved text — leaked drafts never persist
-        self.memory.append(ChatMessage(role="user", content=player_message))
-        self.memory.append(ChatMessage(role="assistant", content=text))
+        importance = 1 if fell_back else await self.memory.score_turn(
+            "assistant", text, self.character.name, self.character.role
+        )
+        self.memory.add_turn("assistant", text, importance=importance)
+        if importance >= EPISODIC_IMPORTANCE:
+            self.session.record_note(
+                source="auto",
+                content=text[:200],
+                char_id=self.character.id,
+                importance=importance,
+            )
+        if self.memory.consolidation_due():
+            await self.memory.consolidate()
         return AgentReply(text=text, leaks=leaks, rewritten=rewritten, fell_back=fell_back)

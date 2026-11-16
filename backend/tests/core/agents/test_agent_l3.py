@@ -70,10 +70,10 @@ async def test_memory_messages_are_guarded_on_replay(session):
         lambda msgs: (seen.append([m.content for m in msgs]), "嗯。")[1]
     )
     agent = _make_agent(session)
-    await agent.respond(QUESTION_WITH_SECRET)   # turn 1: secret enters memory
-    await agent.respond("那你觉得谁最可疑？")     # turn 2: memory replayed
+    await agent.respond(QUESTION_WITH_SECRET)   # seen[0] draft, seen[1] importance scorer
+    await agent.respond("那你觉得谁最可疑？")     # seen[2] draft
 
-    turn2_input = seen[1]
+    turn2_input = seen[2]
     # the turn-1 question is present in memory but wrapped in the guard note
     guarded = [m for m in turn2_input if "你不可能知道" in m]
     assert len(guarded) == 1
