@@ -1,14 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, type AccuseResult, type ClueSummary, type GameInfo, type NoteItem } from '../api'
+import {
+  api,
+  type AccuseResult,
+  type ClueSummary,
+  type GameInfo,
+  type NoteItem,
+  type RoleCard,
+} from '../api'
 import { getLayout } from '../game/layout'
 import { streamTalk } from '../sse'
 import AccuseDialog from './game/AccuseDialog'
 import ActionBar from './game/ActionBar'
 import CaseFile from './game/CaseFile'
 import ChatView, { type Msg } from './game/ChatView'
+import DiscussionView from './game/DiscussionView'
 import IntroOverlay from './game/IntroOverlay'
 import PhaseProgress from './game/PhaseProgress'
 import RevealOverlay from './game/RevealOverlay'
+import RoleCardOverlay from './game/RoleCardOverlay'
 import Roster from './game/Roster'
 
 type Buckets = Record<string, Msg[]>
@@ -40,6 +49,10 @@ export default function GameView({ game, onExit, onReplay }: Props) {
   const [error, setError] = useState<string | null>(null)
   const skipIntros = useRef(false)
   const advanceIntro = useRef<() => void>(() => {})
+  const roleplay = game.player_seat != null
+  const [roleCard, setRoleCard] = useState<RoleCard | null>(null)
+  const [showRoleCard, setShowRoleCard] = useState(roleplay)
+  const [centerView, setCenterView] = useState<'chat' | 'discussion'>(roleplay ? 'discussion' : 'chat')
 
   const layout = getLayout(game.mode, phase)
   const activeCharacter = characters.find((c) => c.id === activeChar) ?? characters[0]
@@ -47,7 +60,10 @@ export default function GameView({ game, onExit, onReplay }: Props) {
   useEffect(() => {
     api.getClues(game.game_id).then((r) => setClues(r.clues)).catch(() => {})
     api.getNotes(game.game_id).then((r) => setNotes(r.notes)).catch(() => {})
-  }, [game.game_id])
+    if (roleplay) {
+      api.getRoleCard(game.game_id).then(setRoleCard).catch(() => {})
+    }
+  }, [game.game_id, roleplay])
 
   const charName = (id: string | null) =>
     characters.find((c) => c.id === id)?.name ?? id ?? '?'
@@ -161,6 +177,9 @@ export default function GameView({ game, onExit, onReplay }: Props) {
         <h2>{game.title}</h2>
         <PhaseProgress phase={phase} />
         <span className="shell-spacer" />
+        {roleplay && roleCard && (
+          <button className="link" onClick={() => setShowRoleCard(true)}>🎭 角色卡</button>
+        )}
       </header>
 
       <div
@@ -196,7 +215,24 @@ export default function GameView({ game, onExit, onReplay }: Props) {
               </p>
             </section>
           )}
-          {layout.center === 'chat' && activeCharacter && (
+          {roleplay && layout.center === 'chat' && ['investigation', 'accusation', 'reveal', 'ended'].includes(phase) && (
+            <div className="center-tabs">
+              <button className={centerView === 'discussion' ? 'active' : ''} onClick={() => setCenterView('discussion')}>
+                公开讨论
+              </button>
+              <button className={centerView === 'chat' ? 'active' : ''} onClick={() => setCenterView('chat')}>
+                私聊 · {activeCharacter?.name ?? ''}
+              </button>
+            </div>
+          )}
+          {layout.center === 'chat' && activeCharacter && centerView === 'discussion' && roleplay ? (
+            <DiscussionView
+              gameId={game.game_id}
+              characters={characters}
+              playerSeat={game.player_seat!}
+              onError={setError}
+            />
+          ) : layout.center === 'chat' && activeCharacter ? (
             <ChatView
               character={activeCharacter}
               messages={buckets[activeChar] ?? []}
@@ -207,7 +243,7 @@ export default function GameView({ game, onExit, onReplay }: Props) {
               sending={streaming && streamCharId === activeChar}
               streamText={streamCharId === activeChar ? streamText : ''}
             />
-          )}
+          ) : null}
           {error && <p className="error floating">{error}</p>}
         </main>
 
@@ -238,7 +274,7 @@ export default function GameView({ game, onExit, onReplay }: Props) {
       {accuseOpen && (
         <AccuseDialog
           gameId={game.game_id}
-          characters={characters}
+          characters={characters.filter((c) => c.id !== game.player_seat)}
           onCancel={() => setAccuseOpen(false)}
           onConfirm={doAccuse}
         />
@@ -246,9 +282,13 @@ export default function GameView({ game, onExit, onReplay }: Props) {
       {reveal && (
         <RevealOverlay
           result={reveal}
+          playerIsKiller={game.player_is_killer}
           onReplay={() => onReplay(game.game_id, game.title)}
           onExit={onExit}
         />
+      )}
+      {showRoleCard && roleCard && (
+        <RoleCardOverlay card={roleCard} firstTime={phase === 'intro'} onClose={() => setShowRoleCard(false)} />
       )}
     </div>
   )

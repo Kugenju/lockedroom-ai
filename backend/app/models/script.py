@@ -57,6 +57,9 @@ class Script(BaseModel):
     title: str
     brief: str = ""
     mode: str = "investigation"  # gameplay mode: drives frontend panel/view registry
+    player_selectable: list[str] = Field(
+        default_factory=list
+    )  # roleplay mode: seats the human player may take
     facts: list[Fact]
     characters: list[ScriptCharacter]
     clues: list[ScriptClue]
@@ -110,6 +113,11 @@ class Script(BaseModel):
         victims = [c for c in self.characters if c.is_victim]
         if len(victims) > 1:
             raise ValueError(f"at most one victim allowed, found {len(victims)}")
+
+        talkable_ids = {c.id for c in self.talkable_characters}
+        for seat in self.player_selectable:
+            if seat not in talkable_ids:
+                raise ValueError(f"player_selectable seat {seat} is not a talkable character")
 
         for clue in self.clues:
             for fid in clue.reveals_fact_ids:

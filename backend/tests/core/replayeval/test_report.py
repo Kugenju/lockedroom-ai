@@ -62,3 +62,20 @@ def test_report_handles_failed_chain():
     md = render_report(SCRIPT, events, metrics, ReasoningChain(summary="（推理链提取失败，可查看原始事件流了解对局过程。）"))
     assert "推理链" in md  # section still renders
     assert "提取失败" in md
+
+
+def test_report_player_killer_victory_line():
+    events = _full_game_events()
+    # the fixture accuses the killer himself; make it name someone else instead
+    for e in events:
+        if e.type is EventType.PLAYER_ACTION and e.payload.get("action") == "accuse":
+            e.payload["detail"]["suspect_id"] = "fang_heming"
+            e.payload["detail"]["killer_correct"] = False
+    metrics = compute_metrics(SCRIPT, events)
+    # player sits the killer seat and the accusation named someone else → 脱罪
+    md = render_report(SCRIPT, events, metrics, ReasoningChain(summary="s"), player_seat="zhou_muchen")
+    assert "你的身份：真凶" in md
+    assert "成功脱罪" in md
+    # without player seat the report keeps the investigator wording
+    md2 = render_report(SCRIPT, events, metrics, ReasoningChain(summary="s"))
+    assert "你的身份" not in md2

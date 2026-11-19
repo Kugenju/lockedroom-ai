@@ -4,6 +4,8 @@ brief: |
   冬至夜，暴风雪封住了山。山庄主人沈万楼被发现死于自己的书房——
   房门从内反锁，窗户插着插销，是一间完美的密室。
   在场的五个人都有嫌疑，而雪停之前，没有人能离开。
+mode: roleplay
+player_selectable: [lin_wanqiu, gu_chengye, su_manqing, fang_heming, zhou_muchen]
 
 facts:
   - id: p_setup

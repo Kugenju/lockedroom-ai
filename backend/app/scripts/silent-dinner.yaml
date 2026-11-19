@@ -1,0 +1,166 @@
+id: silent-dinner
+title: 沉默的晚宴
+brief: |
+  周六夜，暴雨冲垮了下山的路。沈家每月一次的家宴照常开席——
+  主人沈崇山却在举杯之后倒在了餐桌上。
+  醒酒器里的红酒验出了乌头碱，而在座的五个人，
+  每一个人都有一段不想被摆上台面的往事。
+
+mode: roleplay
+player_selectable: [shen_wanqing, zhou_yazhi, lao_zhou, he_junhui, gu_yunzhou]
+
+facts:
+  - id: p_setup
+    visibility: public
+    core: false
+    content: 死者沈崇山，62岁，沈氏集团董事长，死于家宴餐桌上，红酒杯残液检出乌头碱。
+    keywords: [沈崇山, 乌头碱, 家宴]
+  - id: p_storm
+    visibility: public
+    core: false
+    content: 暴雨冲垮山路，晚宴期间无人能进出庄园，凶手必在赴宴五人之中。
+    keywords: [暴雨, 封路]
+  - id: t_method
+    visibility: private
+    core: true
+    content: 凶手将乌头碱预先溶入醒酒器，全桌共饮只有沈崇山毒发，死状伪装成心源性猝死。
+    keywords: [乌头碱, 醒酒器, 心脏病]
+  - id: t_time
+    visibility: private
+    core: true
+    content: 实际毒发与死亡时间为19:40至20:00之间，早于众人以为的"20:30倒下时"。
+    keywords: [七点四十, "19:40", 毒发]
+  - id: t_decanter
+    visibility: private
+    core: true
+    content: 醒酒器在宴前由管家擦拭摆放，19:52 监控显示醒酒器被挪动过——凶手接触过它。
+    keywords: [醒酒器, 挪动, "19:52"]
+  - id: t_access
+    visibility: private
+    core: true
+    content: 厨房监控在19:52被一只戴手套的手遮挡了45秒，回来时醒酒器位置已变。
+    keywords: [监控, 遮挡, 手套]
+  - id: t_motive
+    visibility: private
+    core: true
+    content: 顾云舟是沈崇山的私生子，上周上门摊牌被当众羞辱并拒认，他调换醒酒器下了毒。
+    keywords: [私生子, 摊牌, 拒认]
+  - id: t_inherit
+    visibility: private
+    core: false
+    content: 沈晚晴挪用公司资金八百万填个人投资窟窿，沈崇山已掌握流水，限其一周内归还。
+    keywords: [挪用, 投资, 八百万]
+  - id: t_affair
+    visibility: private
+    core: false
+    content: 周雅芝与私人教练有染，被沈崇山雇的私家侦探拍到，他手握离婚协议只待签字。
+    keywords: [出轨, 离婚协议, 侦探]
+  - id: t_blackmail
+    visibility: private
+    core: false
+    content: 何俊辉掌握着沈崇山二十年前工地事故致人死亡的旧案证据，长期以此换取好处。
+    keywords: [旧案, 把柄, 工地事故]
+  - id: t_noise
+    visibility: private
+    core: false
+    content: 管家老周19:55经过厨房时听见里面有动静，但因偷喝了酒怕被责罚没有声张。
+    keywords: [动静, "19:55", 厨房]
+
+characters:
+  - id: shen_chongshan
+    name: 沈崇山
+    role: 死者（家主）
+    is_victim: true
+    is_killer: false
+    public_profile: 死者。白手起家的集团董事长，说一不二，正在重立遗嘱。
+    personality: ""
+    speaking_style: ""
+    known_fact_ids: []
+  - id: shen_wanqing
+    name: 沈晚晴
+    role: 长女（集团副总）
+    is_victim: false
+    is_killer: false
+    public_profile: 死者长女，协助打理集团，外界眼中的完美继承人。
+    personality: 高傲紧绷，控制欲强，越心虚越是居高临下。
+    speaking_style: 语速快，爱用反问，习惯性纠正别人的措辞。
+    known_fact_ids: [t_inherit]
+  - id: zhou_yazhi
+    name: 周雅芝
+    role: 续弦夫人
+    is_victim: false
+    is_killer: false
+    public_profile: 死者续弦，比丈夫小二十岁，常年经营慈善基金会。
+    personality: 圆滑敏感，滴水不漏，擅长把话题引向别处。
+    speaking_style: 柔声细语，措辞得体，从不直接回答是非题。
+    known_fact_ids: [t_affair]
+  - id: lao_zhou
+    name: 老周
+    role: 管家
+    is_victim: false
+    is_killer: false
+    public_profile: 沈家老管家，服务三十年，负责晚宴的酒水与布置。
+    personality: 老实拘谨，忠诚但胆小，喝了酒容易说漏嘴。
+    speaking_style: 絮叨谦恭，常有"是""老奴"，紧张时重复半句话。
+    known_fact_ids: [t_noise]
+  - id: he_junhui
+    name: 何俊辉
+    role: 公司副总
+    is_victim: false
+    is_killer: false
+    public_profile: 集团副总，死者一手提拔，今晚特来汇报工作。
+    personality: 精明务实，进退有度，习惯在谈话里留后手。
+    speaking_style: 条理分明，数字与时间表不离口，回避私人话题。
+    known_fact_ids: [t_blackmail]
+  - id: gu_yunzhou
+    name: 顾云舟
+    role: 老友之子
+    is_victim: false
+    is_killer: true
+    public_profile: 死者故交之子，今晚以晚辈身份赴宴，话不多，坐在最角落。
+    personality: 沉静克制，观察入微，被注视时会露出恰到好处的悲伤。
+    speaking_style: 简短克制，多答少问，偶尔一句意味深长的话。
+    known_fact_ids: [t_method, t_time, t_decanter, t_access, t_motive]
+
+clues:
+  - id: c_report
+    title: 初步检验意见
+    stage: 0
+    location: 餐厅（死者座位）
+    description: 乌头碱中毒特征明显，毒发时间指向宴后半小时内，远早于倒下被发现的时刻。
+    reveals_fact_ids: [t_method, t_time]
+  - id: c_decanter
+    title: 醒酒器内壁残液
+    stage: 0
+    location: 餐边柜
+    description: 醒酒器底部残液乌头碱浓度极高，壶嘴有细微擦拭痕迹。
+    reveals_fact_ids: [t_decanter]
+  - id: c_camera
+    title: 监控遮挡记录
+    stage: 0
+    location: 厨房门口
+    description: 19:52 监控被戴手套的手遮挡 45 秒，恢复后醒酒器已被挪动。
+    reveals_fact_ids: [t_access]
+  - id: c_docs
+    title: 抽屉里的文件
+    stage: 0
+    location: 书房抽屉
+    description: 一份资金流水（沈晚晴经手）和一封未签署的离婚协议草稿。
+    reveals_fact_ids: [t_inherit, t_affair]
+  - id: c_oldcase
+    title: 泛黄的剪报
+    stage: 1
+    location: 书房（书架夹层）
+    description: 二十年前工地事故的剪报复印件，边缘写着"你以为过去了吗"。
+    reveals_fact_ids: [t_blackmail]
+  - id: c_birth
+    title: 出生证明复印件
+    stage: 1
+    location: 书房（保险柜）
+    description: 一份出生证明：生父沈崇山，生母顾氏——持有人一栏签着顾云舟的名字。
+    reveals_fact_ids: [t_motive]
+
+evaluation:
+  killer_id: gu_yunzhou
+  motive_fact_id: t_motive
+  required_fact_ids: [t_method, t_time, t_decanter, t_access, t_motive]

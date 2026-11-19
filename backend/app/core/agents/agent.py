@@ -1,13 +1,11 @@
 """A character agent: persona + scoped knowledge + leak-intercepted dialogue.
 
-Pipeline per player message:
-  1. record the player's message (event log)
-  2. generate a draft reply via the LLM
-  3. LeakDetector checks the draft (InfoGuard Layer 2)
-     - hard leak  -> one rewrite attempt with an explicit warning
-     - still hard -> discard the draft entirely, emit a safe fallback line
-     - soft leak  -> recorded, reply passes
-  4. record the approved reply; memory only ever sees approved text
+Two public interaction channels:
+- respond(): private interrogation — player talks one-on-one with this character
+- discuss(): public discussion round — the character speaks in front of everyone
+
+Both share the same screened-generation pipeline (generate → Layer-2 detect →
+judge → rewrite/fallback); memory only ever sees approved text.
 """
 
 from dataclasses import dataclass, field
@@ -44,7 +42,7 @@ class CharacterAgent:
         session: GameSession,
         detector: LeakDetector,
         judge: LeakJudge | None = None,
-        memory: "AgentMemory | None" = None,
+        memory: AgentMemory | None = None,
     ):
         self.character = character
         self.script = script
@@ -62,7 +60,8 @@ class CharacterAgent:
 
     def _record_memory_event(self, **payload) -> None:
         self.session.record_event(
-            EventType.SYSTEM, {"kind": "memory_consolidation", "character_id": self.character.id, **payload}
+            EventType.SYSTEM,
+            {"kind": "memory_consolidation", "character_id": self.character.id, **payload},
         )
 
     def _emit_leaks(
@@ -89,27 +88,15 @@ class CharacterAgent:
             return message
         return ChatMessage(role="user", content=self._guard.guard(message.content).text)
 
-    async def respond(self, player_message: str) -> AgentReply:
-        phase = self.session.phase.value
+    # --- shared generation pipeline ---
 
-        # Layer 3: annotate and guard the incoming player message
-        guarded = self._guard.guard(player_message)
-        meta = {}
-        if guarded.findings:
-            meta = {
-                "guarded": True,
-                "guarded_fact_ids": [f.fact_id for f in guarded.findings],
-            }
-        self.session.record_message(
-            "player", self.character.id, player_message, phase=phase, **meta
-        )
+    async def _screened_generate(
+        self, messages: list[ChatMessage]
+    ) -> tuple[str, list[LeakFinding], bool, bool]:
+        """Generate a reply and screen it through InfoGuard Layer 2 (+judge).
 
-        messages = [
-            ChatMessage(role="system", content=self._system_prompt),
-            *[self._guarded_memory(m) for m in self.memory.build_context()],
-            ChatMessage(role="user", content=guarded.text),
-        ]
-        self.memory.add_turn("user", player_message)
+        Returns (approved_text, surviving_leaks, rewritten, fell_back).
+        """
         draft = await self.llm.chat(messages)
         leaks = self.detector.check(draft.content)
         verdicts: dict[str, AdjudicatedLeak] = {}
@@ -138,10 +125,12 @@ class CharacterAgent:
                 content=(
                     "（导演提示：你刚才的回答泄露了你不可能知道的信息："
                     + "；".join(self.script.get_fact(l.fact_id).content[:40] for l in hard_leaks)
-                    + "。请重新回答玩家上一个问题，彻底避开这些内容。）"
+                    + "。请重新回答，彻底避开这些内容。）"
                 ),
             )
-            retry = await self.llm.chat([*messages, ChatMessage(role="assistant", content=draft.content), warn])
+            retry = await self.llm.chat(
+                [*messages, ChatMessage(role="assistant", content=draft.content), warn]
+            )
             retry_hard = [l for l in self.detector.check(retry.content) if l.severity == "hard"]
             if retry_hard:
                 self._emit_leaks(retry_hard, action="fallback")
@@ -155,13 +144,10 @@ class CharacterAgent:
                 self._emit_leaks([l for l in leaks if l.severity == "soft"], action="passed")
         else:
             self._emit_leaks(leaks, action="passed")
+        return text, leaks, rewritten, fell_back
 
-        self.session.record_message(
-            self.character.id, "player", text, phase=phase,
-            **({"rewritten": True} if rewritten else {}),
-            **({"fell_back": True} if fell_back else {}),
-        )
-        # memory only ever contains approved text — leaked drafts never persist
+    async def _commit_reply(self, text: str, fell_back: bool) -> None:
+        """Record the approved reply: event log + tiered memory + auto-note."""
         importance = 1 if fell_back else await self.memory.score_turn(
             "assistant", text, self.character.name, self.character.role
         )
@@ -175,4 +161,75 @@ class CharacterAgent:
             )
         if self.memory.consolidation_due():
             await self.memory.consolidate()
+
+    # --- channels ---
+
+    async def respond(self, player_message: str) -> AgentReply:
+        phase = self.session.phase.value
+
+        # Layer 3: annotate and guard the incoming player message
+        guarded = self._guard.guard(player_message)
+        meta = {}
+        if guarded.findings:
+            meta = {
+                "guarded": True,
+                "guarded_fact_ids": [f.fact_id for f in guarded.findings],
+            }
+        self.session.record_message(
+            "player", self.character.id, player_message, phase=phase, **meta
+        )
+
+        messages = [
+            ChatMessage(role="system", content=self._system_prompt),
+            *[self._guarded_memory(m) for m in self.memory.build_context()],
+            ChatMessage(role="user", content=guarded.text),
+        ]
+        self.memory.add_turn("user", player_message)
+
+        text, leaks, rewritten, fell_back = await self._screened_generate(messages)
+        self.session.record_message(
+            self.character.id, "player", text, phase=phase,
+            **({"rewritten": True} if rewritten else {}),
+            **({"fell_back": True} if fell_back else {}),
+        )
+        # memory only ever contains approved text — leaked drafts never persist
+        await self._commit_reply(text, fell_back)
+        return AgentReply(text=text, leaks=leaks, rewritten=rewritten, fell_back=fell_back)
+
+    async def discuss(self, transcript: list[tuple[str, str]]) -> AgentReply:
+        """One public discussion speech in front of everyone.
+
+        transcript: raw (sender_id | "player", content) pairs of the public thread.
+        Every entry is re-guarded against THIS agent's scope: a fact that is
+        public for the speaker may still be unknown to the listener.
+        """
+        phase = self.session.phase.value
+        public_lines = []
+        for sender, content in transcript:
+            name = "玩家" if sender == "player" else self.script.get_character(sender).name
+            line = f"{name}：{content}"
+            public_lines.append(
+                ChatMessage(role="user", content=self._guard.guard(line).text)
+            )
+        discuss_prompt = (
+            self._system_prompt
+            + "\n\n【自由讨论环节】所有人围坐公开讨论案件，轮到你发言。根据讨论进展和你的立场"
+            "说一段话——可以质疑、辩解、转移视线或补充信息，不超过三句话。"
+            "仍然遵守铁律：不得透露你的秘密清单之外、你不应该知道的事。"
+        )
+        messages = [
+            ChatMessage(role="system", content=discuss_prompt),
+            *[
+                self._guarded_memory(m) if m.role == "user" else m
+                for m in self.memory.build_context()
+            ],
+            *public_lines,
+        ]
+        text, leaks, rewritten, fell_back = await self._screened_generate(messages)
+        self.session.record_message(
+            self.character.id, "all", text, phase=phase,
+            **({"rewritten": True} if rewritten else {}),
+            **({"fell_back": True} if fell_back else {}),
+        )
+        await self._commit_reply(text, fell_back)
         return AgentReply(text=text, leaks=leaks, rewritten=rewritten, fell_back=fell_back)

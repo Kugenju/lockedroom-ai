@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 class CreateGameRequest(BaseModel):
     script_id: str
+    player_seat: str | None = None  # roleplay mode: pick your character
 
 
 class CharacterSummary(BaseModel):
@@ -26,6 +27,8 @@ class GameInfo(BaseModel):
     mode: str = "investigation"
     phase: str
     brief: str
+    player_seat: str | None = None
+    player_is_killer: bool = False  # the player's own role info (role card already discloses it)
     characters: list[CharacterSummary]
 
 
@@ -133,3 +136,22 @@ class NoteItem(BaseModel):
 
 class NotesResponse(BaseModel):
     notes: list[NoteItem]
+
+
+class DiscussionSayRequest(BaseModel):
+    message: str = Field(min_length=1)
+
+
+class DiscussionSpeakRequest(BaseModel):
+    character_id: str
+
+
+class DiscussionMessage(BaseModel):
+    sender: str
+    sender_name: str
+    content: str
+    ts: str
+
+
+class DiscussionThreadResponse(BaseModel):
+    messages: list[DiscussionMessage]

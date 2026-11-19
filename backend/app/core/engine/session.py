@@ -19,11 +19,13 @@ class GameSession:
         script: Script,
         llm: BaseChatModel,
         event_store: EventStore | None = None,
+        player_seat: str | None = None,
     ):
         self.session_id = session_id
         self.script = script
         self.llm = llm
         self.event_store = event_store
+        self.player_seat = player_seat  # roleplay mode: the human player's character
         self._sm = GameStateMachine()
         self._events: list[GameEvent] = []
         self._unlocked_clues: set[str] = set()
@@ -80,6 +82,18 @@ class GameSession:
     @property
     def unlocked_clue_ids(self) -> frozenset[str]:
         return frozenset(self._unlocked_clues)
+
+    def discussion(self) -> list[dict]:
+        """Public discussion thread: message events addressed to everyone."""
+        return [
+            {
+                "sender": e.payload.get("sender"),
+                "content": e.payload.get("content", ""),
+                "ts": e.ts,
+            }
+            for e in self._events
+            if e.type is EventType.MESSAGE and e.payload.get("recipient") == "all"
+        ]
 
     def record_system(self, kind: str, content: str) -> GameEvent:
         return self._emit(EventType.SYSTEM, {"kind": kind, "content": content})

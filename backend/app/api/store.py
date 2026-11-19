@@ -33,15 +33,20 @@ class GameStore:
         self._event_store = event_store
         self._games: dict[str, GameRecord] = {}
 
-    def create(self, script_id: str) -> GameRecord:
+    def create(self, script_id: str, player_seat: str | None = None) -> GameRecord:
         from app.core.config import Settings
         from app.core.llm.factory import create_chat_model
         from app.core.llm.fake import FakeLLM
 
         script = load_script(script_id)  # FileNotFoundError → 404 at the route layer
+        if player_seat is not None and player_seat not in script.player_selectable:
+            raise ValueError(
+                f"seat {player_seat!r} is not selectable for script {script_id} "
+                f"(options: {script.player_selectable})"
+            )
         session = GameSession(
             session_id=uuid.uuid4().hex, script=script, llm=self._llm,
-            event_store=self._event_store,
+            event_store=self._event_store, player_seat=player_seat,
         )
         if self._event_store is not None:
             self._event_store.create_game(session.session_id, script_id, session.phase.value)
@@ -74,6 +79,7 @@ class GameStore:
                 judge=judge,
             )
             for c in script.talkable_characters
+            if c.id != player_seat
         }
         record = GameRecord(session=session, agents=agents)
         self._games[session.session_id] = record

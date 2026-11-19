@@ -14,7 +14,31 @@ export interface GameInfo {
   mode: string
   phase: string
   brief: string
+  player_seat: string | null
+  player_is_killer: boolean
   characters: CharacterSummary[]
+}
+
+export interface ScriptDetail {
+  id: string
+  title: string
+  mode: string
+  player_selectable: string[]
+  characters: CharacterSummary[]
+}
+
+export interface RoleCard {
+  character: CharacterSummary
+  speaking_style: string
+  public_profile: string
+  secrets: string[]
+}
+
+export interface DiscussionMessage {
+  sender: string
+  sender_name: string
+  content: string
+  ts: string
 }
 
 export interface ClueSummary {
@@ -121,10 +145,15 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  listScripts: () => req<{ scripts: string[] }>('/scripts'),
-  createGame: (scriptId: string) =>
-    req<GameInfo>('/games', { method: 'POST', body: JSON.stringify({ script_id: scriptId }) }),
+  listScripts: () =>
+    req<{ scripts: string[]; details: ScriptDetail[] }>('/scripts'),
+  createGame: (scriptId: string, playerSeat?: string | null) =>
+    req<GameInfo>('/games', {
+      method: 'POST',
+      body: JSON.stringify({ script_id: scriptId, player_seat: playerSeat ?? null }),
+    }),
   getGame: (gameId: string) => req<GameInfo>(`/games/${gameId}`),
+  getRoleCard: (gameId: string) => req<RoleCard>(`/games/${gameId}/role-card`),
   advancePhase: (gameId: string, target: string) =>
     req<{ phase: string }>(`/games/${gameId}/phase`, {
       method: 'POST',
@@ -152,6 +181,13 @@ export const api = {
     }),
   deleteNote: (gameId: string, noteId: string) =>
     req<{ ok: boolean }>(`/games/${gameId}/notes/${noteId}`, { method: 'DELETE' }),
+  getDiscussion: (gameId: string) =>
+    req<{ messages: DiscussionMessage[] }>(`/games/${gameId}/discussion`),
+  sayDiscussion: (gameId: string, message: string) =>
+    req<{ messages: DiscussionMessage[] }>(`/games/${gameId}/discussion/say`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
   accuse: (gameId: string, suspectId: string, motiveFactId: string | null) =>
     req<AccuseResult>(`/games/${gameId}/accuse`, {
       method: 'POST',
@@ -164,4 +200,52 @@ export const api = {
     if (!resp.ok) throw new Error(`${resp.status}`)
     return resp.text()
   },
+}
+
+// SSE stream of one AI character's public discussion speech
+export async function* streamDiscussionSpeak(
+  gameId: string,
+  characterId: string,
+): AsyncGenerator<
+  | { type: 'token'; chunk: string }
+  | { type: 'done'; character_id: string; reply: string; rewritten: boolean; fell_back: boolean }
+> {
+  const resp = await fetch(`/api/games/${gameId}/discussion/speak`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ character_id: characterId }),
+  })
+  if (!resp.ok || !resp.body) throw new Error(`${resp.status}`)
+  const reader = resp.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    let idx: number
+    while ((idx = buffer.indexOf('\n\n')) >= 0) {
+      const frame = buffer.slice(0, idx)
+      buffer = buffer.slice(idx + 2)
+      let event = 'message'
+      const dataLines: string[] = []
+      for (const line of frame.split('\n')) {
+        if (line.startsWith('event: ')) event = line.slice(7).trim()
+        else if (line.startsWith('data: ')) dataLines.push(line.slice(6))
+      }
+      if (dataLines.length === 0) continue
+      const data = JSON.parse(dataLines.join('\n'))
+      if (event === 'token') {
+        yield { type: 'token', chunk: data.chunk as string }
+      } else if (event === 'done') {
+        yield {
+          type: 'done',
+          character_id: data.character_id,
+          reply: data.reply,
+          rewritten: data.rewritten,
+          fell_back: data.fell_back,
+        }
+      }
+    }
+  }
 }

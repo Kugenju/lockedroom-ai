@@ -252,6 +252,31 @@ input, textarea {
 .game-topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
 .phase-badge { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--dim); }
 
+.center-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.center-tabs button { flex: 0 0 auto; padding: 6px 16px; font-size: 13px; }
+.center-tabs button.active { border-color: var(--accent); color: var(--accent); }
+.msg-sender { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); margin-bottom: 4px; }
+
+.seat-picker { max-width: 760px; }
+.seat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 12px 0 20px; }
+.seat-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 16px 10px; text-align: center; position: relative;
+}
+.seat-card.selected { border-color: var(--accent); background: rgba(212,169,78,0.08); }
+.seat-card em { font-size: 11px; color: var(--dim); font-style: normal; }
+.seat-locked { position: absolute; top: 6px; right: 8px; font-size: 10px; color: var(--dim); }
+
+.rolecard-head { display: flex; gap: 14px; align-items: flex-start; }
+.rolecard-head h2 { margin: 0; }
+.rolecard-profile { color: var(--dim); font-size: 13px; margin: 4px 0 0; }
+.rolecard-secrets {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 16px; margin: 14px 0;
+}
+.rolecard-secrets h4 { margin: 0 0 8px; color: var(--accent); }
+.rolecard-secrets ul { margin: 0; padding-left: 18px; line-height: 1.8; font-size: 14px; }
+
 @media (max-width: 1080px) {
   .shell-body { grid-template-columns: 280px 1fr; }
   .roster { display: none; }

@@ -178,3 +178,25 @@ def test_midnight_meeting_script_loads():
     killer = next(c for c in script.characters if c.is_killer)
     assert killer.id == script.evaluation.killer_id
     assert script.evaluation.motive_fact_id in killer.known_fact_ids
+
+
+def test_silent_dinner_script_loads():
+    from app.core.scripts.loader import list_scripts, load_script
+
+    assert "silent-dinner" in list_scripts()
+    script = load_script("silent-dinner")
+    assert script.mode == "roleplay"
+    assert script.evaluation.killer_id in script.player_selectable  # killer seat is playable
+    assert script.get_character(script.evaluation.killer_id).is_killer
+    talkable = {c.id for c in script.talkable_characters}
+    assert set(script.player_selectable) <= talkable
+
+
+def test_player_selectable_validated():
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        make_script(mode="roleplay", player_selectable=["ghost"])
+    # victim seat is not talkable → rejected
+    with pytest.raises(ValidationError):
+        make_script(mode="roleplay", player_selectable=["v1"])

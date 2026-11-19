@@ -15,6 +15,10 @@ from app.api.schemas import (
     ClueListResponse,
     ClueSummary,
     CreateGameRequest,
+    DiscussionMessage,
+    DiscussionSayRequest,
+    DiscussionSpeakRequest,
+    DiscussionThreadResponse,
     EventLogResponse,
     GameInfo,
     MotiveOption,
@@ -35,7 +39,7 @@ from app.core.engine.state_machine import IllegalPhaseTransition, Phase
 from app.core.replayeval.chain import extract_chain
 from app.core.replayeval.metrics import compute_metrics
 from app.core.replayeval.report import render_report
-from app.core.scripts.loader import list_scripts
+from app.core.scripts.loader import list_scripts, load_script
 
 router = APIRouter(prefix="/api", tags=["game"])
 
@@ -60,21 +64,41 @@ def _get_agent(record: GameRecord, character_id: str):
 
 @router.get("/scripts")
 def list_available_scripts() -> dict:
-    return {"scripts": list_scripts()}
+    details = []
+    for sid in list_scripts():
+        s = load_script(sid)
+        details.append(
+            {
+                "id": s.id,
+                "title": s.title,
+                "mode": s.mode,
+                "player_selectable": s.player_selectable,
+                "characters": [
+                    {"id": c.id, "name": c.name, "role": c.role, "personality": c.personality}
+                    for c in s.talkable_characters
+                ],
+            }
+        )
+    return {"scripts": [d["id"] for d in details], "details": details}
 
 
 @router.post("/games", status_code=200)
 def create_game(req: CreateGameRequest, store: GameStore = Depends(get_store)) -> GameInfo:
     try:
-        record = store.create(req.script_id)
+        record = store.create(req.script_id, player_seat=req.player_seat)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from None
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from None
     session = record.session
     return GameInfo(
         game_id=session.session_id,
         script_id=session.script.id,
         title=session.script.title,
         mode=session.script.mode,
+        player_seat=session.player_seat,
+        player_is_killer=session.player_seat is not None
+        and session.player_seat == session.script.evaluation.killer_id,
         phase=session.phase.value,
         brief=session.script.brief,
         characters=[
@@ -93,6 +117,9 @@ def get_game(game_id: str, store: GameStore = Depends(get_store)) -> GameInfo:
         script_id=session.script.id,
         title=session.script.title,
         mode=session.script.mode,
+        player_seat=session.player_seat,
+        player_is_killer=session.player_seat is not None
+        and session.player_seat == session.script.evaluation.killer_id,
         phase=session.phase.value,
         brief=session.script.brief,
         characters=[
@@ -245,6 +272,30 @@ def get_motive_options(
     return MotiveOptionsResponse(options=options)
 
 
+@router.get("/games/{game_id}/role-card")
+def get_role_card(game_id: str, store: GameStore = Depends(get_store)) -> dict:
+    """The human player's private role card — own secrets only, never in GameInfo/replay."""
+    record = _get_record(store, game_id)
+    session = record.session
+    if session.player_seat is None:
+        raise HTTPException(status_code=400, detail="this game has no player seat")
+    character = session.script.get_character(session.player_seat)
+    secrets = [
+        session.script.get_fact(fid).content
+        for fid in character.known_fact_ids
+        if session.script.get_fact(fid).visibility == "private"
+    ]
+    return {
+        "character": CharacterSummary(
+            id=character.id, name=character.name, role=character.role,
+            personality=character.personality,
+        ),
+        "speaking_style": character.speaking_style,
+        "public_profile": character.public_profile,
+        "secrets": secrets,
+    }
+
+
 # --- reasoning notes ---
 
 
@@ -281,6 +332,83 @@ def remove_note(
         raise HTTPException(status_code=404, detail=f"note {note_id} not found")
     record.session.delete_note(note_id)
     return {"ok": True}
+
+
+# --- public discussion (roleplay channel) ---
+
+
+def _discussion_thread(session) -> DiscussionThreadResponse:
+    script = session.script
+    messages = [
+        DiscussionMessage(
+            sender=t["sender"],
+            sender_name=(
+                "玩家" if t["sender"] == "player" else script.get_character(t["sender"]).name
+            ),
+            content=t["content"],
+            ts=t["ts"],
+        )
+        for t in session.discussion()
+    ]
+    return DiscussionThreadResponse(messages=messages)
+
+
+@router.get("/games/{game_id}/discussion")
+def get_discussion(game_id: str, store: GameStore = Depends(get_store)) -> DiscussionThreadResponse:
+    record = _get_record(store, game_id)
+    return _discussion_thread(record.session)
+
+
+@router.post("/games/{game_id}/discussion/say")
+def say_in_discussion(
+    game_id: str, req: DiscussionSayRequest, store: GameStore = Depends(get_store)
+) -> DiscussionThreadResponse:
+    record = _get_record(store, game_id)
+    session = record.session
+    if session.phase is not Phase.INVESTIGATION:
+        raise HTTPException(status_code=400, detail="discussion is only available during investigation")
+    session.record_message("player", "all", req.message, phase=session.phase.value)
+    return _discussion_thread(session)
+
+
+@router.post("/games/{game_id}/discussion/speak")
+async def discussion_speak(
+    game_id: str, req: DiscussionSpeakRequest, store: GameStore = Depends(get_store)
+) -> StreamingResponse:
+    record = _get_record(store, game_id)
+    session = record.session
+    if session.phase is not Phase.INVESTIGATION:
+        raise HTTPException(status_code=400, detail="discussion is only available during investigation")
+    agent = record.agents.get(req.character_id)
+    if agent is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"character {req.character_id} is not an AI-controlled talkable seat",
+        )
+
+    async def gen() -> AsyncIterator[str]:
+        transcript = [(t["sender"], t["content"]) for t in session.discussion()]
+        reply = await agent.discuss(transcript)
+        # broadcast the approved speech into every other agent's memory as an observation
+        speaker_name = session.script.get_character(req.character_id).name
+        for other_id, other in record.agents.items():
+            if other_id != req.character_id:
+                other.memory.add_turn(
+                    "user", f"[公共讨论] {speaker_name}：{reply.text}", importance=5
+                )
+        for i in range(0, len(reply.text), 3):
+            yield _sse("token", {"chunk": reply.text[i : i + 3]})
+        yield _sse(
+            "done",
+            {
+                "character_id": req.character_id,
+                "reply": reply.text,
+                "rewritten": reply.rewritten,
+                "fell_back": reply.fell_back,
+            },
+        )
+
+    return StreamingResponse(gen(), media_type="text/event-stream")
 
 
 @router.post("/games/{game_id}/accuse")
@@ -368,5 +496,5 @@ async def get_report(game_id: str, store: GameStore = Depends(get_store)) -> Res
     session = record.session
     metrics = compute_metrics(session.script, session.events)
     chain = await extract_chain(session.script, session.events, session.llm)
-    md = render_report(session.script, session.events, metrics, chain)
+    md = render_report(session.script, session.events, metrics, chain, player_seat=session.player_seat)
     return Response(content=md, media_type="text/markdown; charset=utf-8")

@@ -13,7 +13,11 @@ _TIMELINE_CAP = 60
 
 
 def render_report(
-    script: Script, events: list[GameEvent], metrics: Metrics, chain: ReasoningChain
+    script: Script,
+    events: list[GameEvent],
+    metrics: Metrics,
+    chain: ReasoningChain,
+    player_seat: str | None = None,
 ) -> str:
     ev = script.evaluation
     killer_name = script.get_character(ev.killer_id).name
@@ -41,12 +45,20 @@ def render_report(
     if accusation is not None:
         d = accusation.payload.get("detail", {})
         suspect = script.get_character(d.get("suspect_id", "")).name
-        verdict = "正确" if d.get("killer_correct") else "错误"
-        motive_verdict = "正确" if d.get("motive_correct") else "错误"
-        lines += [
-            f"- 指认凶手：{suspect}（{verdict}，真相是 {killer_name}）",
-            f"- 指认动机：{motive_verdict}",
-        ]
+        player_is_killer = player_seat is not None and player_seat == ev.killer_id
+        if player_is_killer:
+            escaped = not d.get("killer_correct")
+            lines += [
+                f"- 你的身份：真凶（{killer_name}）",
+                f"- 结果：{'✓ 成功脱罪' if escaped else '✗ 你被指认了'}（玩家指认了 {suspect}）",
+            ]
+        else:
+            verdict = "正确" if d.get("killer_correct") else "错误"
+            motive_verdict = "正确" if d.get("motive_correct") else "错误"
+            lines += [
+                f"- 指认凶手：{suspect}（{verdict}，真相是 {killer_name}）",
+                f"- 指认动机：{motive_verdict}",
+            ]
     else:
         lines.append("- 玩家未进行指认。")
     lines += [
