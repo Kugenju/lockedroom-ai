@@ -110,16 +110,20 @@ export default function GameView({ game, onExit, onReplay }: Props) {
       advanceIntro.current = resolve
     })
 
+  // AI-only cast for the entrance sequence: the player's own seat introduces itself
+  // (via the discussion channel) and has no agent to generate an intro.
+  const introCast = characters.filter((c) => c.id !== game.player_seat)
+
   const startSelfIntros = async () => {
     setError(null)
     skipIntros.current = false
     try {
       await runPhase('self_intro')
-      for (let i = 0; i < characters.length; i++) {
+      for (let i = 0; i < introCast.length; i++) {
         if (skipIntros.current) break
         setIntroIdx(i)
         setIntroSpeech('')
-        const spoken = await streamCharacter(characters[i].id, INTRO_PROMPT)
+        const spoken = await streamCharacter(introCast[i].id, INTRO_PROMPT)
         setIntroSpeech(spoken)
         if (skipIntros.current) break
         await waitForClick()
@@ -262,7 +266,7 @@ export default function GameView({ game, onExit, onReplay }: Props) {
 
       {introIdx !== null && (
         <IntroOverlay
-          characters={characters}
+          characters={introCast}
           idx={introIdx}
           streamText={streamText}
           speech={introSpeech}
