@@ -37,10 +37,22 @@ def test_killer_prompt_carries_concealment_instruction():
 
 def test_innocent_prompt_has_no_killer_instruction():
     prompt = _prompt_for("su_manqing")
-    assert "真凶" not in prompt
+    assert "你的真实身份" not in prompt  # killer-identity block is killer-only
 
 
 def test_prompt_forbids_out_of_scope_knowledge():
     prompt = _prompt_for("gu_chengye")
     assert "不知道" in prompt  # instructed to plead ignorance
     assert "绝不要" in prompt or "不得" in prompt
+
+
+def test_prompt_injects_backstory_timeline_goals():
+    script = load_script("snow-night-villa")
+    for char in script.talkable_characters:
+        prompt = _prompt_for(char.id)
+        if char.backstory:
+            assert char.backstory[:20] in prompt, f"{char.id} backstory missing"
+        if char.timeline:
+            assert char.timeline[0][:15] in prompt, f"{char.id} timeline missing"
+        if char.goals:
+            assert "本局目标" in prompt and char.goals[0][:12] in prompt, f"{char.id} goals missing"

@@ -75,7 +75,7 @@ async def test_memory_messages_are_guarded_on_replay(session):
 
     turn2_input = seen[2]
     # the turn-1 question is present in memory but wrapped in the guard note
-    guarded = [m for m in turn2_input if "你不可能知道" in m]
+    guarded = [m for m in turn2_input if "玩家的话里包含你不可能知道的事" in m]
     assert len(guarded) == 1
     assert QUESTION_WITH_SECRET in guarded[0]
 

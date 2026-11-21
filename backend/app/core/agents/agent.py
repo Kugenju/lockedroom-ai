@@ -88,6 +88,16 @@ class CharacterAgent:
             return message
         return ChatMessage(role="user", content=self._guard.guard(message.content).text)
 
+    def note_public_clue(self, title: str, description: str, fact_ids: list[str]) -> None:
+        """A public clue was unlocked: it enters every agent's memory and its
+        revealed facts stop counting as leaks (they are now public knowledge)."""
+        self.memory.add_turn(
+            "user", f"[公开线索] {title}：{description}", importance=6
+        )
+        for fid in fact_ids:
+            self.detector.exempt_fact(fid)
+            self._guard.exempt_fact(fid)
+
     # --- shared generation pipeline ---
 
     async def _screened_generate(

@@ -233,10 +233,15 @@ def search_clues(
     unlocked = []
     for clue in matches:
         if session.unlock_clue(clue.id, clue.title) is not None:
-            unlocked.append(_clue_summary(clue))
+            unlocked.append(clue)
+    # public knowledge: every agent sees the unlocked clues and stops
+    # treating the revealed facts as out-of-scope secrets
+    for clue in unlocked:
+        for agent in record.agents.values():
+            agent.note_public_clue(clue.title, clue.description, clue.reveals_fact_ids)
     return SearchResponse(
         location=req.location,
-        unlocked=unlocked,
+        unlocked=[_clue_summary(c) for c in unlocked],
         total_unlocked=len(session.unlocked_clue_ids),
     )
 
@@ -292,6 +297,9 @@ def get_role_card(game_id: str, store: GameStore = Depends(get_store)) -> dict:
         ),
         "speaking_style": character.speaking_style,
         "public_profile": character.public_profile,
+        "backstory": character.backstory,
+        "timeline": character.timeline,
+        "goals": character.goals,
         "secrets": secrets,
     }
 

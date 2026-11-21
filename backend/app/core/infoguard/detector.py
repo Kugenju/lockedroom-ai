@@ -23,7 +23,20 @@ class LeakFinding:
 
 class LeakDetector:
     def __init__(self, script: Script, scope: InformationScope):
-        self._matcher = FactMatcher(script, scope.forbidden_fact_ids)
+        self._script = script
+        self._scope = scope
+        self._exempted: set[str] = set()
+        self._rebuild()
+
+    def _rebuild(self) -> None:
+        fact_ids = set(self._scope.forbidden_fact_ids) - self._exempted
+        self._matcher = FactMatcher(self._script, fact_ids)
+
+    def exempt_fact(self, fact_id: str) -> None:
+        """A fact became public knowledge (e.g. its clue was unlocked): stop
+        treating mentions of it as leaks for this agent."""
+        self._exempted.add(fact_id)
+        self._rebuild()
 
     def check(self, text: str) -> list[LeakFinding]:
         return [

@@ -31,7 +31,20 @@ class GuardResult:
 
 class ContextGuard:
     def __init__(self, script: Script, scope: InformationScope):
-        self._matcher = FactMatcher(script, scope.forbidden_fact_ids)
+        self._script = script
+        self._scope = scope
+        self._exempted: set[str] = set()
+        self._rebuild()
+
+    def _rebuild(self) -> None:
+        fact_ids = set(self._scope.forbidden_fact_ids) - self._exempted
+        self._matcher = FactMatcher(self._script, fact_ids)
+
+    def exempt_fact(self, fact_id: str) -> None:
+        """Public-knowledge exemption: a fact revealed by an unlocked clue is
+        something the character may legitimately discuss."""
+        self._exempted.add(fact_id)
+        self._rebuild()
 
     def guard(self, text: str) -> GuardResult:
         findings = self._matcher.match(text)

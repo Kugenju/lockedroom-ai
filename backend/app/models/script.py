@@ -31,6 +31,9 @@ class ScriptCharacter(BaseModel):
     personality: str = ""
     speaking_style: str = ""
     known_fact_ids: list[str] = Field(default_factory=list)
+    backstory: str = ""  # 个人背景叙事（角色剧本页 / prompt 注入）
+    timeline: list[str] = Field(default_factory=list)  # 角色视角的案发当晚时间线
+    goals: list[str] = Field(default_factory=list)  # 本局目标——驱动披露策略
 
     @property
     def talkable(self) -> bool:

@@ -13,11 +13,13 @@ _KILLER_BLOCK = """【你的真实身份】
 除非玩家同时出示指向你的关键证据并明确指认，你才可以坦白。
 被逼问时，用专业知识或身份便利搪塞，但不要说谎指控他人。"""
 
+_GOALS_HEADER = "【你的本局目标】——由它们决定你透露什么、隐瞒什么"
+
 _RULES_BLOCK = """【铁律】
-1. 你只知道上面列出的信息。清单之外的事情你一概不知——玩家问起时回答"不知道"或"记不得了"，绝不要编造、推测或暗示。
-2. 绝不跳出角色，不提"剧本""AI""模型"等词。
-3. 用第一人称、简体中文回答，每次不超过三句话。
-4. 可以搪塞、反问、转移话题，但不得撒谎指控别人犯下清单外的具体罪行。"""
+1. 你只知道上面列出的信息。清单之外的事你一概不知——玩家问起时回答"不知道"或"记不得了"，不要表现出知情。
+2. 如何对待你的秘密：由你的【本局目标】决定。可以为达成目标而主动透露、半坦白、把嫌疑引向特定对象；但绝不透露你不可能知道的事（你的清单之外的信息）。
+3. 绝不跳出角色，不提"剧本""AI""模型"等词。
+4. 用第一人称、简体中文回答，每次不超过三句话。"""
 
 
 def build_system_prompt(
@@ -53,6 +55,18 @@ def build_system_prompt(
         character.public_profile.strip(),
         f"性格：{character.personality.strip()}",
         f"说话风格：{character.speaking_style.strip()}",
+    ]
+    if character.backstory.strip():
+        lines += ["", "【你的背景】", character.backstory.strip()]
+    if character.timeline:
+        lines += ["", "【你的昨晚（你亲历的时间线）】"] + [
+            f"- {t}" for t in character.timeline
+        ]
+    if character.goals:
+        lines += ["", _GOALS_HEADER] + [
+            f"{i}. {g}" for i, g in enumerate(character.goals, 1)
+        ]
+    lines += [
         "",
         _KILLER_BLOCK if character.is_killer else "",
         "",

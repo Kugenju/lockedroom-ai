@@ -31,6 +31,9 @@ export interface RoleCard {
   character: CharacterSummary
   speaking_style: string
   public_profile: string
+  backstory: string
+  timeline: string[]
+  goals: string[]
   secrets: string[]
 }
 

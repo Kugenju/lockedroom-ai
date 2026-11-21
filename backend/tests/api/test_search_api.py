@@ -80,3 +80,28 @@ def test_search_events_in_event_log(client, game_id):
 def test_search_unknown_location(client, game_id):
     r = client.post(f"/api/games/{game_id}/search", json={"location": "火星"})
     assert r.status_code == 404
+
+
+def _advance(client, gid):
+    for p in ["self_intro", "evidence", "investigation"]:
+        client.post(f"/api/games/{gid}/phase", json={"target": p})
+
+
+def test_unlocked_clue_becomes_discussable_without_guard(client):
+    # the live-bug regression: after unlocking the autopsy clue, an agent can
+    # discuss the revealed facts — no L3 wrap on the question, no L2 leak event
+    gid = client.post("/api/games", json={"script_id": "snow-night-villa"}).json()["game_id"]
+    _advance(client, gid)
+    r = client.post(f"/api/games/{gid}/search", json={"location": "书房（死者身上）"})
+    assert r.status_code == 200
+
+    r = client.post(
+        f"/api/games/{gid}/talk",
+        json={"character_id": "lin_wanqiu", "message": "初步检验报告提到针孔和胰岛素注射，你怎么看？"},
+    )
+    assert r.status_code == 200
+    events = client.get(f"/api/games/{gid}/events").json()["events"]
+    player_msgs = [e for e in events if e["type"] == "message" and e["payload"]["sender"] == "player"]
+    assert all("guarded" not in e["payload"] for e in player_msgs)
+    leaks = [e for e in events if e["type"] == "leak_detected"]
+    assert all(e["payload"]["fact_id"] != "t_method" for e in leaks)
